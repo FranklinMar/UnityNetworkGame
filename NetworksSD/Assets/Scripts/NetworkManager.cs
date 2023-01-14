@@ -10,16 +10,11 @@ public class NetworkManager : MonoBehaviour
 
     private void Start()
     {
-        //GameCanvas.SetActive(true);
-        float random = Random.Range(-1f, 1f);
-        //PhotonNetwork.automaticallySyncScene = true;
-        PhotonNetwork.Instantiate(PlayerPrefab.name, new Vector2(transform.position.x/* * random*/, transform.position.y), Quaternion.identity, 0);
+        // Synchronyze the scene
+        PhotonNetwork.automaticallySyncScene = true;
+        // Instantiate player object, spawn it by coordinates, and assign this object to current user
+        PhotonNetwork.Instantiate(PlayerPrefab.name, new Vector2(transform.position.x, transform.position.y), Quaternion.identity, 0);
+        // Activate scene main camera
         SceneCamera.SetActive(true);
-    }
-
-    public void SpawnPlayer()
-    {
-        //GameCanvas.SetActive(false);
-        //SceneCamera.SetActive(false);
     }
 }

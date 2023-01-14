@@ -1,41 +1,39 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-//using SWNetwork;
 using UnityEngine.SceneManagement;
 
 public class Fox : Photon.MonoBehaviour
 {
+    // 2DCollider for standing
     [SerializeField] private Collider2D Stand;
+    // 2DCollider for crouching
     [SerializeField] private Collider2D Crouch;
-    //[SerializeField] private GameObject playerCamera;
+    // Coordinates object of player's feet
     [SerializeField] private Transform feetPos;
+    // PhotonView object for multiplayer
     [SerializeField] private PhotonView photonView;
+    // Type of ground object for configuration of physics
     [SerializeField] private LayerMask groundType;
-    //[SerializeField] private Collider2D Crouch;
+    // Speed velocity value for player
     [SerializeField] private float speed = 5f;
+    // Number of lives value for player
     [SerializeField] private int lives = 3;
+    // Jump force value for player
     [SerializeField] private float jump = 7.5f;
-    /*[SerializeField] private float crouchOffsetX = 0;
-    [SerializeField] private float crouchOffsetY = 0.077f;
-    [SerializeField] private float crouchSizeX = 0.175f;
-    [SerializeField] private float crouchSizeY = 0.15f;*/
 
-    /*private float standOffsetX;
-    private float standOffsetY;
-    private float standSizeX;
-    private float standSizeY;*/
-
+    // RigidBody2D object for physics (velocity and movement)
     private Rigidbody2D rigidBody;
+    // Object for displaying Player sprite
     private SpriteRenderer sprite;
+    // Animator object for displaying animations depending on state
     private Animator animator;
-    //private NetworkID networkID;
-    // private Collider2D collider;
+    // X axis movement force from input
     private float moveInput;
+    // Y axis velocity float for animator object, to detect and change the state of animation
     private float yVelocity
     {
         get { return animator.GetFloat("yVelocity"); }
         set { bool isGrounded = CheckGround();
+            // If doesn't touch ground
             if (!CheckGround())
             {
                 animator.SetFloat("yVelocity", value);
@@ -45,22 +43,30 @@ public class Fox : Photon.MonoBehaviour
                 animator.SetFloat("yVelocity", 0);
             }
             animator.SetBool("Jump", !isGrounded);
-            //animator.SetFloat("yVelocity", value);
         }
     }
+    // X axis velocity float for animator object, to detect and change the state of animation
     private float xVelocity
     {
         get { return animator.GetFloat("xVelocity"); }
         set { animator.SetFloat("xVelocity", System.Math.Abs(value)); }
     }
 
+    // Radius float radius for detecting colliders (In example, for ground)
     [SerializeField] private float checkRadius = 0.3f;
+    // Max jump time for player (while going upwards)
     [SerializeField] private float jumpTime = 0.20f;
+    // Speed increase value for running
     [SerializeField] private float runSpeedIncreasing = 1.5f;
+    // Speed decrease value for crouching
     [SerializeField] private float runCrouchDecreasing = 0.5f;
+    // Private in-air time counter
     private float jumpTimeCounter;
+    // Player jumping indicator
     private bool isJumping;
+    // Player running indicator
     private bool isRunning;
+    // Player crouching indicator
     private bool isCrouching;
 
     private bool crouching
@@ -71,171 +77,161 @@ public class Fox : Photon.MonoBehaviour
         }
         set
         {
+            // Swap colliders and set animator state variable
             isCrouching = value;
             animator.SetBool("Crouch", isCrouching);
             Stand.enabled = !value;
             Crouch.enabled = value;
         }
     }
-    // Start is called before the first frame update
+    // Is called before the first frame update
     void Start()
     {
+        // If player object belongs to this user in network
         if (photonView.isMine)
         {
             rigidBody = GetComponent<Rigidbody2D>();
             sprite = GetComponent<SpriteRenderer>();
             animator = GetComponent<Animator>();
-            //playerCamera.SetActive(true);
-            //playerCamera = GetComponentInChildren<Camera>();
-            //networkID = GetComponent<NetworkID>();
-            //collider = GetComponent<Collider2D>();
-            /*standOffsetX = collider.offset.x;
-            standOffsetY = collider.offset.x;
-            standSizeX = collider.size.x;
-            standSizeY = collider.size.y;*/
-
-            //if (networkID.IsMine)
-            //{
+            // Assign this user's player object to camera
             CameraController camera = Camera.main.GetComponent<CameraController>();
             camera.player = transform;
         }
-        //}
     }
 
+    // Is called when user changes focus back to game
     void Awake()
     {
+        // If player object belongs to this user in network
         if (photonView.isMine) { 
             rigidBody = GetComponent<Rigidbody2D>();
             sprite = GetComponent<SpriteRenderer>();
             animator = GetComponent<Animator>();
-            //xplayerCamera.SetActive(true);
-            //playerCamera = GetComponentInChildren<Camera>();
-            //networkID = GetComponent<NetworkID>();
-            //collider = GetComponent<CapsuleCollider2D>();
-            //PlayerCamera.SetActive(true);
         }
     }
 
+    // Update that is called once per several frames
     void FixedUpdate()
     {
         
     }
 
-    // Update is called once per frame
+    // Update that is called once per frame
     void Update()
     {
+        // If player object belongs to this user in network
         if (photonView.isMine)
         {
-            //if (networkID.IsMine) { 
             yVelocity = rigidBody.velocity.y;
             xVelocity = rigidBody.velocity.x;
+            // Get X axis input movement
             moveInput = Input.GetAxisRaw("Horizontal");
 
+            // If "Running" is pressed
             if (Input.GetKeyDown(KeyCode.LeftShift))
             {
                 isRunning = true;
             }
+            // Else when released
             else if (Input.GetKeyUp(KeyCode.LeftShift))
             {
                 isRunning = false;
             }
-
+            // If "Crouch" is pressed and touching the ground
             if (Input.GetButton("Crouch") && CheckGround())
             {
                 crouching = true;
-                /*collider.offset.x = crouchOffsetX;
-                collider.offset.y = crouchOffsetY;
-                collider.size.x = crouchSizeX;
-                collider.size.y = crouchSizeY;*/
-                /*isCrouching = true;
-                animator.SetBool("Crouch", isCrouching);
-                Crouch.enabled = true;
-                Stand.enabled = false;*/
             }
+            // Else if isn't pressing "Crouch" and not touching anything above while crouching, or when jumping
             else if ((!Input.GetButton("Crouch") && !IsUnder(Crouch)) || !CheckGround())
             {
                 crouching = false;
-                /*isCrouching = false;
-                animator.SetBool("Crouch", isCrouching);
-                Stand.enabled = true;
-                Crouch.enabled = false;*/
             }
 
+            // If button for X axis input was pressed
             if (Input.GetButton("Horizontal"))
             {
                 Run();
             }
 
+            // If touches ground and "Jump" is pressed
             if (CheckGround() && Input.GetButtonDown("Jump"))
             {
                 isJumping = true;
-                //animator.SetBool("Jump", true);
+                // Set counter to initial value
                 jumpTimeCounter = jumpTime;
                 Jump();
             }
 
+            // If "Jump" is pressed and in the air
             if (Input.GetButton("Jump") && isJumping)
             {
+                // If counter bigger than zero
                 if (jumpTimeCounter >= 0.0f)
                 {
+                    // Decrease counter by smallest amount of time
                     jumpTimeCounter -= Time.deltaTime;
                     Jump();
                 }
                 else
                 {
                     isJumping = false;
-                    //animator.SetBool("Jump", false);
                 }
             }
 
+            // If "Jump" button is released
             if (Input.GetButtonUp("Jump"))
             {
                 isJumping = false;
             }
 
+            // If "ESC" button is pressed
             if (Input.GetButton("Cancel"))
             {
+                // Leave connection to the room and return to lobby
                 PhotonNetwork.LeaveRoom();
+                // Load Main Menu UI
                 SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex - 1);
             }
-            //}
         }
     }
 
+    // X axis movement function
     private void Run()
     {
+        // Usual speed
         float currentSpeed = moveInput * speed;
+        // If running but isn't crouching
         if (isRunning && !isCrouching)
             currentSpeed *= runSpeedIncreasing;
-        if (isCrouching && CheckGround()) //!isJumping
+        // If crouching and standing on ground
+        if (isCrouching && CheckGround())
             currentSpeed *= runCrouchDecreasing;
         rigidBody.velocity = new Vector2(currentSpeed, rigidBody.velocity.y);
         sprite.flipX = moveInput < 0.0f;
     }
 
+    // Add jump velocity, but not higher than "jump" property
     private void Jump()
     {
         rigidBody.velocity = new Vector2(rigidBody.velocity.x, rigidBody.velocity.y <= jump ? jump : rigidBody.velocity.y);
         yVelocity = rigidBody.velocity.y;
     }
 
+    // Check if player object collides with floor colider
     private bool CheckGround()
     {
+        // If number of colliders is bigger than 1
         Collider2D[] colliders = Physics2D.OverlapCircleAll(transform.position, checkRadius);
         bool isGrounded = colliders.Length > 1;
-        //animator.SetBool("Jump", !isGrounded);
         return isGrounded;
     }
 
+    // Check if current collider is underneath some object
     private bool IsUnder(Collider2D current)
     {
-        /*Collider2D current = isCrouching ? Crouch : Stand;
-        Vector3 vector = new Vector3(current.transform.position.x, current.transform.position.y + current.bounds.extents.y);
-        return Physics2D.OverlapCircle(vector, checkRadius);*/
-        //Collider2D current = isCrouching ? Crouch : Stand;
         Collider2D[] otherColliders = Physics2D.OverlapCircleAll(current.transform.position, checkRadius);
         // Check for any colliders that are on top
-        //bool isUnderneath = false;
         foreach (var collider in otherColliders)
         {
             if (collider.transform.position.y > current.transform.position.y)
@@ -244,8 +240,5 @@ public class Fox : Photon.MonoBehaviour
             }
         }
         return false;
-        /*RaycastHit2D JumpCheck = Physics2D.Raycast(transform.position, Vector2.up, 2f);
-        return JumpCheck.collider == null;*/
-
     }
 }

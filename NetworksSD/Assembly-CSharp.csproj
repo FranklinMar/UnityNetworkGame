@@ -110,7 +110,6 @@
     <Compile Include="Assets\SWNetwork\Scripts\Lobby.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\VertexShakeB.cs" />
     <Compile Include="Assets\Photon Unity Networking\Demos\DemoBoxes\OnClickFlashRpc.cs" />
-    <Compile Include="Assets\Scripts\PlayerNameInput.cs" />
     <Compile Include="Assets\Photon Unity Networking\Plugins\PhotonNetwork\Views\PhotonTransformViewRotationControl.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\EnvMapAnimator.cs" />
     <Compile Include="Assets\Photon Unity Networking\Demos\PunBasics-Tutorial\Scripts\PlayerAnimatorManager.cs" />
