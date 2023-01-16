@@ -3,16 +3,21 @@ using UnityEngine.SceneManagement;
 
 public class Fox : Photon.MonoBehaviour
 {
+    /*
     // 2DCollider for standing
     [SerializeField] private Collider2D Stand;
     // 2DCollider for crouching
-    [SerializeField] private Collider2D Crouch;
+    [SerializeField] private Collider2D Crouch;*/
     // Coordinates object of player's feet
-    [SerializeField] private Transform feetPos;
+    //[SerializeField] private Transform feetPos;
     // PhotonView object for multiplayer
     [SerializeField] private PhotonView photonView;
     // Type of ground object for configuration of physics
     [SerializeField] private LayerMask groundType;
+
+    [SerializeField] private Vector2 crouchOffset = new Vector2(0, 0.077f);
+    [SerializeField] private Vector2 crouchSize = new Vector2(0.175f, 0.15f);
+    [SerializeField] private CapsuleDirection2D crouchDirection = CapsuleDirection2D.Horizontal;
     // Speed velocity value for player
     [SerializeField] private float speed = 5f;
     // Number of lives value for player
@@ -20,6 +25,9 @@ public class Fox : Photon.MonoBehaviour
     // Jump force value for player
     [SerializeField] private float jump = 7.5f;
 
+    private Vector2 standSize;
+    // Collider2D for physics and interaction
+    private CapsuleCollider2D collider;
     // RigidBody2D object for physics (velocity and movement)
     private Rigidbody2D rigidBody;
     // Object for displaying Player sprite
@@ -78,10 +86,16 @@ public class Fox : Photon.MonoBehaviour
         set
         {
             // Swap colliders and set animator state variable
+            if (isCrouching != value)
+            {
+                (collider.offset, crouchOffset) = (crouchOffset, collider.offset);
+                (collider.size, crouchSize) = (crouchSize, collider.size);
+                (collider.direction, crouchDirection) = (crouchDirection, collider.direction);
+            }
             isCrouching = value;
             animator.SetBool("Crouch", isCrouching);
-            Stand.enabled = !value;
-            Crouch.enabled = value;
+            //Stand.enabled = !value;
+            //Crouch.enabled = value;
         }
     }
     // Is called before the first frame update
@@ -93,6 +107,7 @@ public class Fox : Photon.MonoBehaviour
             rigidBody = GetComponent<Rigidbody2D>();
             sprite = GetComponent<SpriteRenderer>();
             animator = GetComponent<Animator>();
+            collider = GetComponent<CapsuleCollider2D>();
             // Assign this user's player object to camera
             CameraController camera = Camera.main.GetComponent<CameraController>();
             camera.player = transform;
@@ -107,6 +122,7 @@ public class Fox : Photon.MonoBehaviour
             rigidBody = GetComponent<Rigidbody2D>();
             sprite = GetComponent<SpriteRenderer>();
             animator = GetComponent<Animator>();
+            collider = GetComponent<CapsuleCollider2D>();
         }
     }
 
@@ -143,7 +159,7 @@ public class Fox : Photon.MonoBehaviour
                 crouching = true;
             }
             // Else if isn't pressing "Crouch" and not touching anything above while crouching, or when jumping
-            else if ((!Input.GetButton("Crouch") && !IsUnder(Crouch)) || !CheckGround())
+            else if ((!Input.GetButton("Crouch") && !IsUnder(/*Crouch*/)) || !CheckGround())
             {
                 crouching = false;
             }
@@ -221,24 +237,54 @@ public class Fox : Photon.MonoBehaviour
     // Check if player object collides with floor colider
     private bool CheckGround()
     {
-        // If number of colliders is bigger than 1
+        //CapsuleCollider2D collider = (CapsuleCollider2D)(isCrouching ? Crouch : Stand);
+        /*Collider2D result = Physics2D.OverlapCapsule(new Vector2(collider.bounds.center.x, collider.bounds.center.y - checkRadius), new Vector2(collider.size.x, collider.size.y), collider.direction, 0f, groundType);
+        Debug.Log(result.ToString());
+        return result != null;*/
         Collider2D[] colliders = Physics2D.OverlapCircleAll(transform.position, checkRadius);
         bool isGrounded = colliders.Length > 1;
         return isGrounded;
+
+        /*CapsuleCollider2D collider = (CapsuleCollider2D) (isCrouching ? Crouch : Stand);
+        RaycastHit2D raycast = Physics2D.CapsuleCast(collider.bounds.center, collider.bounds.size, collider.direction, 0, Vector2.down, checkRadius);
+        return raycast.collider != null;*/
+
+
+        // If number of colliders is bigger than 1
+        /*Collider2D current = crouching ? Crouch : Stand;
+        return Physics.Raycast(transform.position, -Vector3.up, current.bounds.extents.y + checkRadius);*/
     }
 
     // Check if current collider is underneath some object
-    private bool IsUnder(Collider2D current)
+    private bool IsUnder(/*Collider2D current*/)
     {
-        Collider2D[] otherColliders = Physics2D.OverlapCircleAll(current.transform.position, checkRadius);
+        //CapsuleCollider2D collider = (CapsuleCollider2D) current;
+        /*Collider2D result = Physics2D.OverlapCapsule(new Vector2(collider.bounds.center.x, collider.bounds.center.y + checkRadius), new Vector2(collider.size.x, collider.size.y), collider.direction, 0f, groundType);
+        Debug.Log(result.ToString());
+        return result != null;*/
+
+        /*CapsuleCollider2D collider = (CapsuleCollider2D)(isCrouching ? Crouch : Stand);
+        Collider2D result = Physics2D.OverlapCapsule(new Vector2(collider.bounds.center.x, collider.bounds.center.y - checkRadius), collider.size, collider.direction, 0f, groundType);
+        return result != null;*/
+
+
+        Collider2D[] otherColliders = Physics2D.OverlapCircleAll(new Vector2(collider.transform.position.x, collider.transform.position.y + collider.bounds.size.y), checkRadius);
         // Check for any colliders that are on top
-        foreach (var collider in otherColliders)
+        foreach (var other in otherColliders)
         {
-            if (collider.transform.position.y > current.transform.position.y)
+            if (other.transform.position.y > collider.transform.position.y)
             {
                 return true;
             }
         }
         return false;
+
+
+        /*CapsuleCollider2D collider = (CapsuleCollider2D) current;
+        RaycastHit2D raycast = Physics2D.CapsuleCast(collider.bounds.center, collider.bounds.size, collider.direction, 0, Vector2.up, checkRadius);
+        return raycast.collider != null;*/
+
+
+        //return Physics.Raycast(transform.position, Vector3.up, current.bounds.extents.y + checkRadius);
     }
 }
